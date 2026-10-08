@@ -21,6 +21,9 @@ policy evaluation follows the third-party harnesses cited in the paper.
 
 Hosted on HuggingFace: [yangjiange/STP](https://huggingface.co/yangjiange/STP)
 
+Both files are the ViT-B/16 model pre-trained on the **EgoClip** subset of
+Ego4D (3.8 M clips) for 50 epochs.
+
 | file | size | contents |
 |---|---|---|
 | `stp_vitb.pth` | ~558 MiB | ViT-B/16, encoder + both decoders, 146.34 M parameters |
