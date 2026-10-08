@@ -13,7 +13,7 @@ Three things you can do with a pre-trained STP encoder:
 Examples:
     # one image -> a 768-d vector
     python tools/inference.py --ckpt weights/0.95_aug0.8.pth \\
-        --input samples/current_frame.png --mode features
+        --input frame.png --mode features
 
     # a directory of images -> (N, 768)
     python tools/inference.py --ckpt weights/0.95_aug0.8.pth \\
@@ -25,7 +25,7 @@ Examples:
 
     # a frame pair -> reconstructions written to disk
     python tools/inference.py --ckpt weights/0.95_aug0.8.pth \\
-        --input samples/current_frame.png --input-future samples/future_frame.png \\
+        --input frame_t.png --input-future frame_t16.png \\
         --mode predict --output-dir out/
 
 The checkpoint may be a local .pth/.pt, or a HuggingFace repo id such as

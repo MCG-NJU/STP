@@ -126,32 +126,17 @@ feat = model.forward_features(imgs)      # (N, 768)，已带 @torch.no_grad()
 
 ```
 python tools/inference.py --ckpt 0.95_aug0.8.pth \
-    --input samples/current_frame.png --mode features
+    --input frame.png --mode features
 ```
-
-### 导出成纯 ViT 给下游用
-
-不想每次都带上两个解码器的话：
-
-```
-python tools/export_encoder.py --ckpt 0.95_aug0.8.pth \
-    --output stp_vitb_encoder.pth
-```
-
-出来的 `stp_vitb_encoder.pth` 可以直接灌进 timm 的 `VisionTransformer(patch_size=16, embed_dim=768, depth=12, num_heads=12, qkv_bias=True, norm_layer=partial(nn.LayerNorm, eps=1e-6))`，也就是 MAE/VC-1 那一脉的 `vit_base_patch16`，**不用改下游代码**。`pos_embed` 是固定 sin-cos，原样拷，别重新初始化。
-
----
 
 ## 5. 跑一次完整 forward（自检）
 
 ```
 python tools/inference.py --ckpt 0.95_aug0.8.pth \
-    --input samples/current_frame.png \
-    --input-future samples/future_frame.png \
+    --input frame_t.png \
+    --input-future frame_t16.png \
     --mode predict --output-dir out/
 ```
-
-`samples/` 里的两帧是从论文真机演示视频 `pouring water.mp4` 里按区间 16 抽的（帧 0 和帧 16），所以这就是一次真实的「当前帧 / 未来帧」输入。
 
 预期输出形态：
 
