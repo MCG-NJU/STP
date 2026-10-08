@@ -116,6 +116,81 @@ checkpoint. Machine-readable summary: [docs/checkpoint_spec.json](docs/checkpoin
 
 ---
 
+## Inference with a checkpoint
+
+`tools/inference.py` is the single entry point for running a released
+checkpoint. It accepts a local `.pth`/`.pt` **or** a HuggingFace repo id, and
+downloads the file on demand.
+
+```bash
+# image(s) -> (N, 768) [CLS] features -- what a policy consumes
+python tools/inference.py --ckpt lang_0.95_aug0.8_no_lang.pth \
+    --input samples/current_frame.png --mode features
+
+# a whole directory or glob, saved to disk
+python tools/inference.py --ckpt lang_0.95_aug0.8_no_lang.pth \
+    --input 'frames/*.png' --mode features --output feats.npy
+
+# every Nth frame of a video -> (T, 768)
+python tools/inference.py --ckpt lang_0.95_aug0.8_no_lang.pth \
+    --input clip.mp4 --mode video --stride 4 --output clip_feats.npy
+
+# a frame pair -> reconstructions, to sanity-check a checkpoint by eye
+python tools/inference.py --ckpt lang_0.95_aug0.8_no_lang.pth \
+    --input samples/current_frame.png --input-future samples/future_frame.png \
+    --mode predict --output-dir out/
+
+# straight from the hub
+python tools/inference.py --ckpt MCG-NJU/STP --input photo.jpg --mode features
+```
+
+Importable version (works offline once the file is cached):
+
+```python
+from hf.loader import STPEncoder
+
+enc = STPEncoder.from_pretrained('MCG-NJU/STP')     # or a local .pth path
+feats = enc.encode([pil_img_1, pil_img_2])          # (N, 768)
+```
+
+Note that `predict` mode runs the *pre-training* forward, so its output lives in
+per-patch normalised pixel space; it is for inspection, not for evaluation.
+Reconstruction quality is not what downstream performance is measured on.
+
+---
+
+## Weights on HuggingFace
+
+The training checkpoint is 1.75 GB, but **only 558 MiB of that is the model** —
+the rest is AdamW state (`exp_avg` and `exp_avg_sq` for 432 of the 434 tensors)
+plus the AMP scaler. `tools/make_hf_release.py` splits it:
+
+| file | size | for |
+|---|---|---|
+| `stp_vitb.pth` | ~558 MiB | normal consumption (encoder + decoders) |
+| `stp_vitb_encoder.pth` | ~343 MiB | consumers using a plain timm ViT |
+| `config.json`, `models_stp.py`, `util/`, `loader.py` | small | self-contained repo |
+
+```bash
+# build the slim files from the training checkpoint
+python tools/make_hf_release.py --ckpt weights/lang_0.95_aug0.8_no_lang.pth
+
+# log in once, in your own terminal -- the token stays in ~/.cache/huggingface
+hf auth login
+
+# preview, then upload
+python tools/upload_hf.py --repo-id MCG-NJU/STP --dry-run
+python tools/upload_hf.py --repo-id MCG-NJU/STP
+```
+
+`tools/upload_hf.py` reads the token through `huggingface_hub`, so no credential
+is ever passed on a command line or written into a file by this repo. The
+original 1.75 GB training checkpoint should still be published somewhere (a
+release asset, or a separate hub repo) since it is what you need to *resume*
+pre-training; the slim files are for *using* the encoder.
+
+---
+
 ## Pre-train from scratch
 
 ```
@@ -183,13 +258,30 @@ models_stp.py              model: shared encoder + dual decoders + forward_featu
 main_pretrain_stp.py       pre-training entry point
 engine_pretrain_stp.py     training loop
 datasets_egoclip.py        EgoClip frame-pair dataset
-util/                      misc, lr_sched, pos_embed (from the MAE codebase)
+util/                      misc, lr_sched, pos_embed (STP's own implementations)
+tools/inference.py         run a checkpoint: features / predict / video
 tools/load_stp.py          load the checkpoint; run forward / extract features
 tools/verify_ckpt_params.py  verify the 434-tensor match (no torch needed)
 tools/export_encoder.py    strip the decoders, emit a plain ViT backbone
+tools/make_hf_release.py   training checkpoint -> slim inference files
+tools/upload_hf.py         publish the release folder to HuggingFace
 tools/prepare_ego4d_frames.py  mp4 -> PNG frame tree
+hf/                        model card and loader for the hub release
 docs/FORWARD_USAGE.md      detailed forward / loading walkthrough
+docs/PAPER_TO_CODE.md      which reported number comes from which artifact
 ```
+
+**Scope.** This repository is the **pre-training** code and the released
+weights, and nothing else. Downstream policy training is not included, because
+the paper evaluated it with third-party harnesses rather than in-house code:
+the [VC-1 / CortexBench](https://github.com/facebookresearch/eai-vc/tree/main/cortexbench)
+setup for Meta-World, DMControl, Adroit and Trifinger, the
+[R3M](https://github.com/facebookresearch/r3m/tree/eval/evaluation) setup for
+Franka-Kitchen, the official LIBERO transformer policy,
+[RVT-2](https://github.com/NVlabs/RVT) for RLBench, and ACT for the real-world
+tasks. Reproducing a downstream number means dropping the frozen encoder into
+those harnesses. Also not included: the ViT-L encoder, the post-training /
+hybrid pre-training adaptation runs, and the language-fusion variants.
 
 ## Notes on this release
 
