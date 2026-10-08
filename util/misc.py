@@ -317,7 +317,8 @@ def load_model(args, model_without_ddp, optimizer, loss_scaler):
     if args.resume.startswith('https'):
         checkpoint = torch.hub.load_state_dict_from_url(args.resume, map_location='cpu', check_hash=True)
     else:
-        checkpoint = torch.load(args.resume, map_location='cpu')
+        from util.ckpt_io import load_checkpoint
+        checkpoint = load_checkpoint(args.resume)
 
     model_without_ddp.load_state_dict(checkpoint['model'])
     print(f'Resume checkpoint {args.resume}')

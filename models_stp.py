@@ -17,6 +17,12 @@ from functools import partial
 import torch
 import torch.nn as nn
 
+# `timm==0.3.2` (the version this model was trained with) imports
+# `container_abcs` from `torch._six`, which PyTorch removed in 2.0. Installing
+# the shim before importing timm keeps that pinned version working on modern
+# PyTorch without editing site-packages.
+import util.torch_six_compat  # noqa: F401  (must precede the timm import)
+
 from timm.models.vision_transformer import Block, PatchEmbed
 
 from util.pos_embed import get_2d_sincos_pos_embed

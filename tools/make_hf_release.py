@@ -30,6 +30,7 @@ import torch
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import models_stp  # noqa: E402
+from util.ckpt_io import load_checkpoint  # noqa: E402
 
 # keys that are fixed buffers and never receive optimizer state
 FROZEN_KEYS = ('pos_embed', 'decoder_pos_embed')
@@ -58,7 +59,7 @@ def main():
 
     os.makedirs(args.output_dir, exist_ok=True)
 
-    ckpt = torch.load(args.ckpt, map_location='cpu')
+    ckpt = load_checkpoint(args.ckpt)
     state = ckpt['model']
     epoch = ckpt.get('epoch')
     train_args = ckpt.get('args')

@@ -27,6 +27,7 @@ from PIL import Image
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import models_stp  # noqa: E402
+from util.ckpt_io import load_checkpoint  # noqa: E402
 
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
@@ -48,7 +49,7 @@ def load_checkpoint(model, ckpt_path, verbose=True):
     Uses strict=True: the released weights match this architecture exactly
     (434 tensors). If you changed the architecture, expect a shape error.
     """
-    ckpt = torch.load(ckpt_path, map_location='cpu')
+    ckpt = load_checkpoint(ckpt_path)
     state = ckpt['model'] if isinstance(ckpt, dict) and 'model' in ckpt else ckpt
 
     # strict=True: the released weights match this architecture exactly

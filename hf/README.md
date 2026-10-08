@@ -34,7 +34,7 @@ learning.
 | file | size | contents |
 |---|---|---|
 | `stp_vitb.pth` | ~558 MiB | model weights (encoder + both decoders), 146.34 M params |
-| `stp_vitb_encoder.pth` | ~343 MiB | decoder-free encoder, for consumers using a plain timm ViT |
+| `stp_vitb_encoder.pth` | ~327 MiB | decoder-free encoder, for consumers using a plain timm ViT |
 | `config.json` | small | architecture and pre-training recipe |
 | `models_stp.py`, `util/` | small | model definition, so this repo is self-contained |
 | `loader.py` | small | minimal `STPEncoder` wrapper |

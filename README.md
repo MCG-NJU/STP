@@ -168,7 +168,7 @@ plus the AMP scaler. `tools/make_hf_release.py` splits it:
 | file | size | for |
 |---|---|---|
 | `stp_vitb.pth` | ~558 MiB | normal consumption (encoder + decoders) |
-| `stp_vitb_encoder.pth` | ~343 MiB | consumers using a plain timm ViT |
+| `stp_vitb_encoder.pth` | ~327 MiB | consumers using a plain timm ViT |
 | `config.json`, `models_stp.py`, `util/`, `loader.py` | small | self-contained repo |
 
 ```bash

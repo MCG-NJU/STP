@@ -14,7 +14,9 @@ Or straight from the hub without this file:
 
     path = hf_hub_download('MCG-NJU/STP', 'stp_vitb.pth')
     model = models_stp.mae_vit_base_patch16()
-    model.load_state_dict(torch.load(path, map_location='cpu')['model'], strict=True)
+    from util.ckpt_io import load_model_state
+    state, _ = load_model_state(path)
+    model.load_state_dict(state, strict=True)
     model.eval()
 """
 import os
@@ -54,8 +56,12 @@ class STPEncoder:
             path = hf_hub_download(repo_id=repo_id_or_path, filename=filename,
                                    cache_dir=None)
 
-        ckpt = torch.load(path, map_location='cpu')
-        state = ckpt['model'] if isinstance(ckpt, dict) and 'model' in ckpt else ckpt
+        import sys as _sys, os as _os
+        _root = repo_root or _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+        if _root not in _sys.path:
+            _sys.path.insert(0, _root)
+        from util.ckpt_io import load_model_state
+        state, _ = load_model_state(path)
 
         if repo_root and repo_root not in os.sys.path:
             os.sys.path.insert(0, repo_root)

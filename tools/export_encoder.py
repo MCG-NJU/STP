@@ -28,6 +28,7 @@ from PIL import Image
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import models_stp  # noqa: E402
+from util.ckpt_io import load_model_state  # noqa: E402
 
 
 def main():
@@ -40,8 +41,7 @@ def main():
     args = p.parse_args()
 
     model = models_stp.__dict__[args.model]()
-    ckpt = torch.load(args.ckpt, map_location='cpu')
-    state = ckpt['model'] if isinstance(ckpt, dict) and 'model' in ckpt else ckpt
+    state, ckpt = load_model_state(args.ckpt)
     model.load_state_dict(state, strict=True)
     model.eval()
 
