@@ -40,7 +40,7 @@ RESULT: OK -- strict=True load will succeed
 装了 torch + timm 的话，用真实模型再验一次：
 
 ```
-python tools/load_stp.py --ckpt 0.95_aug0.8.pth --check-only
+python -c "import torch, models_stp; m=models_stp.mae_vit_base_patch16(); \n  m.load_state_dict(torch.load('0.95_aug0.8.pth', map_location='cpu')['model'], strict=True); \n  print('434/434 OK')"
 ```
 
 ---
@@ -125,8 +125,8 @@ feat = model.forward_features(imgs)      # (N, 768)，已带 @torch.no_grad()
 命令行版：
 
 ```
-python tools/load_stp.py --ckpt 0.95_aug0.8.pth \
-    --current samples/current_frame.png --features
+python tools/inference.py --ckpt 0.95_aug0.8.pth \
+    --input samples/current_frame.png --mode features
 ```
 
 ### 导出成纯 ViT 给下游用
@@ -145,9 +145,10 @@ python tools/export_encoder.py --ckpt 0.95_aug0.8.pth \
 ## 5. 跑一次完整 forward（自检）
 
 ```
-python tools/load_stp.py --ckpt 0.95_aug0.8.pth \
-    --current samples/current_frame.png \
-    --future  samples/future_frame.png
+python tools/inference.py --ckpt 0.95_aug0.8.pth \
+    --input samples/current_frame.png \
+    --input-future samples/future_frame.png \
+    --mode predict --output-dir out/
 ```
 
 `samples/` 里的两帧是从论文真机演示视频 `pouring water.mp4` 里按区间 16 抽的（帧 0 和帧 16），所以这就是一次真实的「当前帧 / 未来帧」输入。

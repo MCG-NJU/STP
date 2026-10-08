@@ -76,7 +76,6 @@ Effective batch size 4096, matching the paper.
 
 - [docs/FORWARD_USAGE.md](docs/FORWARD_USAGE.md) — loading, forward shapes, pitfalls
 - [docs/PAPER_TO_CODE.md](docs/PAPER_TO_CODE.md) — which reported number comes from which artifact
-- [docs/checkpoint_spec.json](docs/checkpoint_spec.json) — machine-readable checkpoint spec
 
 This repository is the pre-training code only. Downstream policy evaluation
 uses third-party harnesses (CortexBench, R3M, LIBERO, RVT-2, ACT), as cited in

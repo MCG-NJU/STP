@@ -140,7 +140,7 @@ the five Franka-Kitchen tasks.
 | pre-training entry | `main_pretrain_stp.py` |
 | training loop | `engine_pretrain_stp.py` |
 | EgoClip sampling | `datasets_egoclip.py` |
-| checkpoint loading, forward | `tools/load_stp.py` |
+| checkpoint loading, forward | `tools/inference.py` |
 | checkpoint verification | `tools/verify_ckpt_params.py` |
 | encoder-only export | `tools/export_encoder.py` |
 | frame extraction | `tools/prepare_ego4d_frames.py` |
