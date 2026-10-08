@@ -4,7 +4,7 @@ Which code produces which number in the paper, and where the released
 checkpoint sits in that map.
 
 Paper: *Spatiotemporal Predictive Pre-training for Robotic Motor Control*,
-[arXiv:2403.05304](https://arxiv.org/abs/2403.05304) (v4, 21 Nov 2024).
+*International Journal of Computer Vision* (2026), doi:[10.1007/s11263-026-02948-3](https://link.springer.com/article/10.1007/s11263-026-02948-3).
 Supplementary: CVPR 2025 submission #11223.
 
 ---

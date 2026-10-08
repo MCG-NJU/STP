@@ -14,18 +14,19 @@ pipeline_tag: feature-extraction
 
 # STP: Spatiotemporal Predictive Pre-training for Robotic Motor Control
 
-Pre-trained visual encoder for robotic manipulation, from the paper
-**Spatiotemporal Predictive Pre-training for Robotic Motor Control**
-(IJCV 2026, [arXiv:2403.05304](https://arxiv.org/abs/2403.05304)).
+Pre-trained visual encoder for robotic manipulation, from the paper published in
+*International Journal of Computer Vision* (2026):
+[10.1007/s11263-026-02948-3](https://link.springer.com/article/10.1007/s11263-026-02948-3)
 
 Official code: [MCG-NJU/STP](https://github.com/MCG-NJU/STP)
 
-STP pre-trains a **plain image ViT** on large-scale egocentric video (Ego4D /
-EgoClip) with **no** language, action, depth or teacher supervision. It jointly
-learns content and motion features by predicting the masked current frame and
-the masked future frame with a shared encoder and **decoupled dual decoders**.
+STP pre-trains a plain image ViT on large-scale egocentric video (Ego4D /
+EgoClip), with no language, action, depth or teacher supervision. It jointly
+learns content and motion features by reconstructing the masked current frame
+and the masked future frame, using a shared encoder with decoupled dual
+decoders.
 
-At evaluation the encoder is **frozen**, both decoders are discarded, and the
+At evaluation the encoder is frozen, both decoders are discarded, and the
 `[CLS]` token is used as the visual representation for downstream policy
 learning.
 
@@ -33,30 +34,25 @@ learning.
 
 | file | size | contents |
 |---|---|---|
-| `stp_vitb.pth` | ~558 MiB | model weights (encoder + both decoders), 146.34 M params |
-| `stp_vitb_encoder.pth` | ~327 MiB | decoder-free encoder, for consumers using a plain timm ViT |
+| `stp_vitb.pth` | ~558 MiB | model weights (encoder + both decoders), 146.34 M parameters |
+| `stp_vitb_encoder.pth` | ~327 MiB | decoder-free encoder, for use with a plain timm ViT |
 | `config.json` | small | architecture and pre-training recipe |
 | `models_stp.py`, `util/` | small | model definition, so this repo is self-contained |
 | `loader.py` | small | minimal `STPEncoder` wrapper |
-
-The full 1.75 GB training checkpoint (with AdamW optimizer state, for resuming
-pre-training) is available separately — see the repository.
 
 ## Architecture
 
 | | |
 |---|---|
-| encoder | ViT-B/16, 12 layers, 12 heads, 768 dim, fixed sincos pos embed |
+| encoder | ViT-B/16, 12 layers, 12 heads, 768 dim, fixed sincos positional embedding |
 | spatial decoder | 8 blocks, 16 heads, 512 dim, transformer encoder blocks |
-| temporal decoder | 8 blocks, 16 heads, 512 dim, self-attn + cross-attn + FFN |
+| temporal decoder | 8 blocks, 16 heads, 512 dim, self-attention + cross-attention + FFN |
 | input | 224 × 224, ImageNet normalisation |
 
-The **spatial** branch masks the current frame at 75% and reconstructs it.
-The **temporal** branch masks the future frame at 95% and reconstructs it,
-conditioned on the current-frame feature `Z_c` used as a **fixed** key/value —
-so the future-frame query cannot write back into the current-frame
-representation. That asymmetry is the design that matters most: the ablation
-scores 63.7 for `self-cross` against 59.8 for `joint-self`.
+The spatial branch masks the current frame at 75% and reconstructs it. The
+temporal branch masks the future frame at 95% and reconstructs it, conditioned
+on the current-frame feature `Z_c` used as a fixed key/value, so the future-frame
+query cannot write back into the current-frame representation.
 
 ## Usage
 
@@ -80,68 +76,40 @@ Or with the bundled wrapper:
 from loader import STPEncoder
 
 enc = STPEncoder.from_pretrained('yangjiange/STP')
-feats = enc.encode([pil_image_1, pil_image_2])   # (N, 768)
+feats = enc.encode([pil_image_1, pil_image_2]) # (N, 768)
 ```
 
-Match the convention used by VC-1 and R3M: concatenate multi-view and
-multi-frame features in the channel dimension together with the robot's
-proprioceptive state, then train the policy. STP does not constrain the policy
-architecture — the paper evaluates MLPs, transformers, RVT-2 and ACT.
-
-```python
-# equivalent, without the hub package
-import torch, models_stp
-model = models_stp.mae_vit_base_patch16()
-model.load_state_dict(torch.load('stp_vitb.pth', map_location='cpu')['model'], strict=True)
-```
+Concatenate multi-view and multi-frame features in the channel dimension
+together with the robot's proprioceptive state, then train the policy. STP does
+not constrain the policy architecture.
 
 ## Pre-training recipe
 
-AdamW, base lr 1.5e-4, weight decay 0.05, betas (0.9, 0.95), cosine decay,
-50 epochs with 5 warmup, effective batch 4096, `RandomResizedCrop(0.8, 1.0)`
-plus horizontal flip, frame interval 16, mask ratios 75% / 95%, per-patch
-normalised reconstruction target, MSE summed over both branches at 1:1 weight.
+AdamW, base learning rate 1.5e-4, weight decay 0.05, betas (0.9, 0.95), cosine
+decay, 50 epochs with 5 warmup epochs, effective batch size 4096,
+`RandomResizedCrop(0.8, 1.0)` with horizontal flip, frame interval 16, mask
+ratios 75% / 95%, per-patch normalised reconstruction target, MSE summed over
+both branches with 1:1 weight.
 
 Pre-training costs about 1.77× standard image MAE (34.53 vs 19.56 GFLOPs for
-ViT-B/16 at 224²), thanks to the shallow temporal decoder and the 95% future
+ViT-B/16 at 224²), owing to the shallow temporal decoder and the 95% future
 masking.
-
-## Results
-
-Weighted average over five single-task simulation benchmarks (Meta-World,
-Franka-Kitchen, DMControl, Adroit, Trifinger), same pre-training data
-throughout:
-
-| method | WA |
-|---|---|
-| **STP (frozen, ViT-B/16)** | **63.7** |
-| MAE baseline | 59.6 |
-| VC-1 | 61.8 |
-| DINOv2 | 59.6 |
-| CLIP | 55.6 |
-| R3M | 54.9 |
-
-Language-conditioned multi-task: LIBERO-LONG 41.3 ± 0.3, RLBench 51.3 ± 1.4.
-Real-world (five tasks on a low-cost dual-arm robot): 49.3 in the standard
-environment, 46.3 with unseen distractors, against VC-1's 42.0 / 36.7.
 
 ## Note on language
 
-This checkpoint is the **single-modality** variant. Despite the `lang_` in the
-original research filename, it contains no language parameters. Adding language
-narration as a temporal-prediction condition *hurt* performance in the ablation
-(63.1 with language at the encoder vs 63.7 without), because of the modality gap
+This checkpoint is the single-modality variant and contains no language
+parameters. Adding language narration as a temporal-prediction condition
+reduced performance in the paper's ablation, because of the modality gap
 between pre-training and single-modal downstream policies.
 
 ## Intended use
 
 Frozen visual representation for behaviour-cloning policy learning in robotic
-manipulation, especially few-shot regimes. The encoder is not fine-tuned in the
-paper's main results; post-training the encoder on task data is a documented
+manipulation, particularly in few-shot regimes. The encoder is not fine-tuned in
+the paper's main results; post-training the encoder on task data is a documented
 alternative that performs better than end-to-end fine-tuning.
 
-Not intended for general-purpose vision tasks; it is an image-level
-representation optimised for manipulation.
+It is not intended for general-purpose vision tasks.
 
 ## Verification
 
@@ -154,8 +122,8 @@ Checked on `torch 2.14.1+cpu` with `timm 0.3.2`:
 - `stp_vitb.pth` is bit-identical to the original training checkpoint in model
   weights; only the optimizer state and AMP scaler were removed.
 - `stp_vitb_encoder.pth` loads into a plain `timm` `VisionTransformer`
-  (`patch_size=16, embed_dim=768, depth=12, num_heads=12, qkv_bias=True`),
-  with only the classification head unmatched, as expected for a frozen encoder.
+  (`patch_size=16, embed_dim=768, depth=12, num_heads=12, qkv_bias=True`), with
+  only the classification head unmatched, as expected for a frozen encoder.
 
 Two version notes if you load these yourself:
 
@@ -176,7 +144,6 @@ Two version notes if you load these yourself:
   title   = {Spatiotemporal Predictive Pre-training for Robotic Motor Control},
   year    = {2026},
   volume  = {134},
-  number  = {354},
   doi     = {10.1007/s11263-026-02948-3},
 }
 ```

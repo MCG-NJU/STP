@@ -117,7 +117,8 @@ def main():
                         'normalize_mean': [0.485, 0.456, 0.406],
                         'normalize_std': [0.229, 0.224, 0.225]},
         'usage': 'freeze the encoder, take the [CLS] token via forward_features()',
-        'paper': 'arXiv:2403.05304',
+        'paper': 'International Journal of Computer Vision (2026), '
+                 'doi:10.1007/s11263-026-02948-3',
     }
     cfg_path = os.path.join(args.output_dir, 'config.json')
     with open(cfg_path, 'w', encoding='utf-8') as f:

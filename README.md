@@ -5,7 +5,8 @@ pre-trained weights.
 
 > Jiange Yang, Bei Liu, Jianlong Fu, Bocheng Pan, Gangshan Wu, Limin Wang.
 > **Spatiotemporal Predictive Pre-training for Robotic Motor Control.**
-> [arXiv:2403.05304](https://arxiv.org/abs/2403.05304)
+> International Journal of Computer Vision (2026)
+> [10.1007/s11263-026-02948-3](https://link.springer.com/article/10.1007/s11263-026-02948-3)
 
 STP pre-trains a **plain image ViT** for robotic motor control from large-scale
 egocentric video (Ego4D / EgoClip), with **no** language, action, depth or

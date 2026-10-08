@@ -2,7 +2,7 @@
 # All rights reserved.
 #
 # STP: Spatiotemporal Predictive Pre-training for Robotic Motor Control
-# arXiv: https://arxiv.org/abs/2403.05304
+# IJCV 2026: https://link.springer.com/article/10.1007/s11263-026-02948-3
 #
 # This file is a clean re-implementation of the pre-training model. It is
 # parameter-name compatible with the released checkpoint
