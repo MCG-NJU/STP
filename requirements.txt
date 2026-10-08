@@ -1,0 +1,12 @@
+# core (pre-training + forward)
+torch>=1.13
+torchvision
+timm==0.3.2
+numpy
+Pillow
+
+# training only
+tensorboard
+
+# data preparation only
+decord

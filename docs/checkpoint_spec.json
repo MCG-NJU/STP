@@ -1,0 +1,110 @@
+{
+  "checkpoint": "lang_0.95_aug0.8_no_lang.pth",
+  "format": "torch>=1.13 zip-format (not a bare pickle)",
+  "top_level_keys": [
+    "args",
+    "epoch",
+    "model",
+    "optimizer",
+    "scaler"
+  ],
+  "epoch": 49,
+  "tensors": 434,
+  "parameters": 146336000,
+  "parameter_breakdown": {
+    "encoder": 85647360,
+    "spatial_decoder": 26006784,
+    "temporal_decoder": 34428160,
+    "shared_decoder": 102400
+  },
+  "architecture": {
+    "name": "STP ViT-B/16",
+    "encoder": {
+      "embed_dim": 768,
+      "depth": 12,
+      "num_heads": 12,
+      "patch_size": 16,
+      "mlp_ratio": 4,
+      "pos_embed": "fixed sin-cos"
+    },
+    "spatial_decoder": {
+      "embed_dim": 512,
+      "depth": 8,
+      "num_heads": 16,
+      "type": "transformer encoder block"
+    },
+    "temporal_decoder": {
+      "embed_dim": 512,
+      "depth": 8,
+      "num_heads": 16,
+      "type": "self-attn + cross-attn(context=Z_c) + FFN",
+      "context": "current-frame feature, frozen as key/value, never written back"
+    }
+  },
+  "image": {
+    "input_size": 224,
+    "num_patches": 196,
+    "patches_kept_at_75pct": 49,
+    "patches_kept_at_95pct": 9
+  },
+  "pretraining_args": {
+    "clip_model": "ViT-B/16",
+    "cache_dir": "/mnt/my_output/exp/",
+    "batch_size": 64,
+    "epochs": 50,
+    "accum_iter": 1,
+    "model": "mae_vit_base_patch16",
+    "input_size": 224,
+    "mask_ratio": 0.75,
+    "norm_pix_loss": true,
+    "weight_decay": 0.05,
+    "lr": 0.0024,
+    "blr": 0.00015,
+    "min_lr": 0.0,
+    "warmup_epochs": 5,
+    "data_path": "/datasets01/imagenet_full_size/061417/",
+    "output_dir": "/mnt/my_output/exp/lang_0.95_aug0.8_no_lang",
+    "log_dir": "/mnt/my_output/exp/lang_0.95_aug0.8_no_lang",
+    "device": "cuda",
+    "seed": 0,
+    "resume": "",
+    "start_epoch": 0,
+    "num_workers": 32,
+    "pin_mem": true,
+    "world_size": 64,
+    "local_rank": 0,
+    "dist_on_itp": false,
+    "dist_url": "env://",
+    "rank": 0,
+    "gpu": 0,
+    "distributed": true,
+    "dist_backend": "nccl"
+  },
+  "effective_batch_size": 4096,
+  "recipe": {
+    "optimizer": "AdamW",
+    "blr": 0.00015,
+    "weight_decay": 0.05,
+    "betas": [
+      0.9,
+      0.95
+    ],
+    "lr_schedule": "cosine decay",
+    "epochs": 50,
+    "warmup_epochs": 5,
+    "augmentation": "RandomResizedCrop(0.8,1.0) + RandomHorizontalFlip",
+    "mask_ratio_current": 0.75,
+    "mask_ratio_future": 0.95,
+    "frame_interval": 16,
+    "alpha": 0.3,
+    "long_clip_threshold": 60,
+    "loss": "MSE(current) + MSE(future), 1:1 weight, norm_pix_loss=True",
+    "downstream": "freeze encoder, take the [CLS] token"
+  },
+  "verified": {
+    "strict_load": true,
+    "missing": 0,
+    "unexpected": 0,
+    "shape_mismatch": 0
+  }
+}
