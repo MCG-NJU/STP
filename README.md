@@ -1,302 +1,101 @@
 # STP: Spatiotemporal Predictive Pre-training for Robotic Motor Control
 
-Clean, runnable implementation of STP, with a verified loader for the released
-pre-trained weights.
+Official pre-training code and weights.
 
 > Jiange Yang, Bei Liu, Jianlong Fu, Bocheng Pan, Gangshan Wu, Limin Wang.
-> **Spatiotemporal Predictive Pre-training for Robotic Motor Control.**
-> International Journal of Computer Vision (2026)
+> *International Journal of Computer Vision* (2026).
 > [10.1007/s11263-026-02948-3](https://link.springer.com/article/10.1007/s11263-026-02948-3)
 
-STP pre-trains a **plain image ViT** for robotic motor control from large-scale
-egocentric video (Ego4D / EgoClip), with **no** language, action, depth or
-teacher supervision. It jointly performs two masked-prediction tasks with a
-shared encoder and **decoupled dual decoders**:
+STP pre-trains a plain image ViT on large-scale egocentric video (Ego4D /
+EgoClip), with no language, action, depth or teacher supervision. The spatial
+branch masks the current frame at 75% and reconstructs it; the temporal branch
+masks the future frame at 95% and reconstructs it, conditioned on the
+current-frame feature used as a fixed key/value. Downstream, the encoder is
+frozen, both decoders are discarded, and the `[CLS]` token is the visual
+representation.
 
-| branch | input | mask ratio | decoder | learns |
-|---|---|---|---|---|
-| spatial | current frame `I_c` | **75%** | transformer encoder blocks | content / geometry |
-| temporal | future frame `I_f` | **95%** | self-attn + cross-attn block | motion / dynamics |
+## Weights
 
-The temporal decoder uses `Z_c` (the current-frame feature) as a **fixed**
-key/value — the future-frame query cannot write back into the current-frame
-representation. That asymmetry is the single most important design choice
-(`self-cross` 63.7 vs `joint-self` 59.8 weighted average).
+Hosted on HuggingFace: [yangjiange/STP](https://huggingface.co/yangjiange/STP)
 
-At evaluation the encoder is **frozen**, both decoders are discarded, and the
-`[CLS]` token is used as the visual representation for few-shot behavior
-cloning.
-
----
-
-## Checkpoint
-
-`0.95_aug0.8.pth` — ViT-B/16 encoder + two 8-block decoders,
-146.34 M parameters (encoder 85.65 M + spatial decoder 26.01 M + temporal decoder 34.43 M + shared 0.10 M), trained 50 epochs on EgoClip.
-
-```python
-ckpt = torch.load('0.95_aug0.8.pth', map_location='cpu')
-ckpt.keys()      # dict_keys(['model', 'optimizer', 'epoch', 'scaler', 'args'])
-ckpt['epoch']    # 49 (0-indexed final epoch)
-```
-
-The file is a **torch >= 1.13 zip-format** checkpoint. `ckpt['model']` holds
-434 tensors; **all 434 match this architecture exactly** (`strict=True` loads
-cleanly). Verify without even installing torch:
-
-```
-python tools/verify_ckpt_params.py 0.95_aug0.8.pth
-# RESULT: 434/434 tensors matched
-# RESULT: OK -- strict=True load will succeed
-```
-
----
+| file | size | contents |
+|---|---|---|
+| `stp_vitb.pth` | ~558 MiB | ViT-B/16, encoder + both decoders, 146.34 M parameters |
+| `stp_vitb_encoder.pth` | ~327 MiB | decoder-free encoder for a plain timm ViT |
 
 ## Install
 
 ```
 pip install torch torchvision timm==0.3.2 numpy pillow
-pip install tensorboard decord        # training / frame extraction only
 ```
 
-`timm==0.3.2` matters: the reference code asserts it, and newer timm changed
-the `Block` signature.
+`timm==0.3.2` is required; its PyTorch 2.x incompatibility is handled by a
+bundled shim.
 
----
-
-## Forward: pre-training
+## Usage
 
 ```python
-import torch, models_stp
+import torch
+from models_stp import mae_vit_base_patch16
+from huggingface_hub import hf_hub_download
 
-model = models_stp.mae_vit_base_patch16(
-    norm_pix_loss=True, mask_ratio_current=0.75, mask_ratio_future=0.95)
-model.load_state_dict(torch.load('0.95_aug0.8.pth')['model'], strict=True)
+path = hf_hub_download('yangjiange/STP', 'stp_vitb.pth')
+model = mae_vit_base_patch16()
+model.load_state_dict(torch.load(path, map_location='cpu')['model'], strict=True)
 model.eval()
 
-# I_c at time t, I_f at t+16; both (N, 3, 224, 224), ImageNet-normalised
-loss, pred_c, pred_f, mask_c = model(current_frame, future_frame)
-# loss:    scalar, MSE on masked patches of both frames
-# pred_c:  (N, 196, 768)  spatial decoder output
-# pred_f:  (N, 196, 768)  temporal decoder output
-# mask_c:  (N, 196)       1 = removed (147/196 at 75%)
+feats = model.forward_features(images)   # (N, 3, 224, 224) -> (N, 768)
 ```
 
-## Forward: frozen feature extraction (what downstream policies use)
-
-```python
-feat = model.forward_features(imgs)      # (N, 768), the [CLS] token
-```
-
-Match that against VC-1 / R3M usage: concatenate multi-view, multi-frame
-features in the channel dimension together with proprioception, then train the
-policy (MLP / transformer / RVT-2 / ACT). Or export a decoder-free ViT that
-drops straight into existing `timm` backbone code:
+Command line:
 
 ```
-python tools/export_encoder.py --ckpt 0.95_aug0.8.pth --output stp_vitb_encoder.pth
+# images / video -> features
+python tools/inference.py --ckpt yangjiange/STP --input 'frames/*.png' --output feats.npy
+
+# verify a checkpoint against the architecture (no torch needed)
+python tools/verify_ckpt_params.py 0.95_aug0.8.pth
 ```
 
-## End-to-end self-check
+## Pre-train
+
+Extract EgoClip frames once, then:
 
 ```
-python tools/load_stp.py --ckpt 0.95_aug0.8.pth \
-    --current samples/current_frame.png --future samples/future_frame.png
-```
+python tools/prepare_ego4d_frames.py --manifest egoclip.csv \
+    --clip_root <clips> --output_root <frames>
 
-`samples/` holds a real frame pair (frames 0 and 16) pulled from the
-supplementary material's real-world demo video.
-
-See **[docs/FORWARD_USAGE.md](docs/FORWARD_USAGE.md)** for the full walkthrough,
-shapes, and the pre-training/eval hyperparameters read back out of the
-checkpoint. Machine-readable summary: [docs/checkpoint_spec.json](docs/checkpoint_spec.json).
-
----
-
-## Inference with a checkpoint
-
-`tools/inference.py` is the single entry point for running a released
-checkpoint. It accepts a local `.pth`/`.pt` **or** a HuggingFace repo id, and
-downloads the file on demand.
-
-```bash
-# image(s) -> (N, 768) [CLS] features -- what a policy consumes
-python tools/inference.py --ckpt 0.95_aug0.8.pth \
-    --input samples/current_frame.png --mode features
-
-# a whole directory or glob, saved to disk
-python tools/inference.py --ckpt 0.95_aug0.8.pth \
-    --input 'frames/*.png' --mode features --output feats.npy
-
-# every Nth frame of a video -> (T, 768)
-python tools/inference.py --ckpt 0.95_aug0.8.pth \
-    --input clip.mp4 --mode video --stride 4 --output clip_feats.npy
-
-# a frame pair -> reconstructions, to sanity-check a checkpoint by eye
-python tools/inference.py --ckpt 0.95_aug0.8.pth \
-    --input samples/current_frame.png --input-future samples/future_frame.png \
-    --mode predict --output-dir out/
-
-# straight from the hub
-python tools/inference.py --ckpt yangjiange/STP --input photo.jpg --mode features
-```
-
-Importable version (works offline once the file is cached):
-
-```python
-from hf.loader import STPEncoder
-
-enc = STPEncoder.from_pretrained('yangjiange/STP')     # or a local .pth path
-feats = enc.encode([pil_img_1, pil_img_2])          # (N, 768)
-```
-
-Note that `predict` mode runs the *pre-training* forward, so its output lives in
-per-patch normalised pixel space; it is for inspection, not for evaluation.
-Reconstruction quality is not what downstream performance is measured on.
-
----
-
-## Weights on HuggingFace
-
-The training checkpoint is 1.75 GB, but **only 558 MiB of that is the model** —
-the rest is AdamW state (`exp_avg` and `exp_avg_sq` for 432 of the 434 tensors)
-plus the AMP scaler. `tools/make_hf_release.py` splits it:
-
-| file | size | for |
-|---|---|---|
-| `stp_vitb.pth` | ~558 MiB | normal consumption (encoder + decoders) |
-| `stp_vitb_encoder.pth` | ~327 MiB | consumers using a plain timm ViT |
-| `config.json`, `models_stp.py`, `util/`, `loader.py` | small | self-contained repo |
-
-```bash
-# build the slim files from the training checkpoint
-python tools/make_hf_release.py --ckpt weights/0.95_aug0.8.pth
-
-# log in once, in your own terminal -- the token stays in ~/.cache/huggingface
-hf auth login
-
-# preview, then upload
-python tools/upload_hf.py --repo-id yangjiange/STP --dry-run
-python tools/upload_hf.py --repo-id yangjiange/STP
-```
-
-`tools/upload_hf.py` reads the token through `huggingface_hub`, so no credential
-is ever passed on a command line or written into a file by this repo. The
-original 1.75 GB training checkpoint should still be published somewhere (a
-release asset, or a separate hub repo) since it is what you need to *resume*
-pre-training; the slim files are for *using* the encoder.
-
----
-
-## Pre-train from scratch
-
-```
 torchrun --nproc_per_node=8 main_pretrain_stp.py \
-    --manifest /data/ego4d/annotations/egoclip_AVG3s.csv \
-    --data_root /data/ego4d/ego4d_256_egoclip_AVG3s_img \
-    --backend frame_dir --frame_interval 16 \
-    --output_dir /exp/stp_vitb \
-    --batch_size 64 --accum_iter 8 --epochs 50 --warmup_epochs 5 \
-    --blr 1.5e-4 --weight_decay 0.05 --aug_scale_min 0.8
+    --manifest egoclip.csv --data_root <frames> --output_dir <exp> \
+    --batch_size 64 --accum_iter 8 --epochs 50 --warmup_epochs 5
 ```
 
-Effective batch size `64 * 8 * 8 = 4096`, matching the paper.
+Effective batch size 4096, matching the paper.
 
-Prepare frames first (sampling seeks by absolute frame index, so decoding each
-clip once up front is far cheaper than seeking into mp4s every step):
+## Docs
 
+- [docs/FORWARD_USAGE.md](docs/FORWARD_USAGE.md) — loading, forward shapes, pitfalls
+- [docs/PAPER_TO_CODE.md](docs/PAPER_TO_CODE.md) — which reported number comes from which artifact
+- [docs/checkpoint_spec.json](docs/checkpoint_spec.json) — machine-readable checkpoint spec
+
+This repository is the pre-training code only. Downstream policy evaluation
+uses third-party harnesses (CortexBench, R3M, LIBERO, RVT-2, ACT), as cited in
+the paper.
+
+## Citation
+
+```bibtex
+@Article{Yang2026STP,
+  author  = {Jiange Yang and Bei Liu and Jianlong Fu and Bocheng Pan
+             and Gangshan Wu and Limin Wang},
+  journal = {International Journal of Computer Vision},
+  title   = {Spatiotemporal Predictive Pre-training for Robotic Motor Control},
+  year    = {2026},
+  volume  = {134},
+  doi     = {10.1007/s11263-026-02948-3},
+}
 ```
-python tools/prepare_ego4d_frames.py \
-    --manifest /data/ego4d/annotations/egoclip_AVG3s.csv \
-    --clip_root /data/ego4d/ego4d_256_egoclip_AVG3s \
-    --output_root /data/ego4d/ego4d_256_egoclip_AVG3s_img \
-    --workers 16 --shard 0 --num_shards 4
-```
-
----
-
-## Release recipe
-
-From the paper's appendix (and confirmed against `ckpt['args']`):
-
-| | |
-|---|---|
-| optimizer | AdamW, `blr` 1.5e-4, wd 0.05, betas (0.9, 0.95), cosine decay |
-| schedule | 50 epochs, 5 warmup, effective batch 4096 |
-| augmentation | RandomResizedCrop **(0.8, 1.0)**, horizontal flip |
-| frame sampling | interval **16** (fixed), alpha 0.3 for clips <= 60 frames |
-| masks | current 75% (predict masked patches), future **95%** (as condition) |
-| loss | `MSE(I_c) + MSE(I_f)`, 1:1 weight, per-patch normalised targets |
-| encoder | ViT-B/16, 12 layers, 12 heads, 768, fixed sin-cos pos embed |
-| decoders | 2 x 8 layers, 16 heads, 512, fixed sin-cos pos embed |
-
-Selected ablations (weighted average over 5 single-task sim benchmarks):
-
-| setting | WA |
-|---|---|
-| both branches, self-cross temporal decoder | **63.7** |
-| joint-self temporal decoder (8 blocks) | 59.8 |
-| joint-self (12 blocks, param-matched) | 59.1 |
-| no spatial prediction on current frame | 57.4 |
-| future frame not masked to 95% | — |
-| frame interval 8 / 16 / 24 | 61.3 / **63.7** / 62.5 |
-
-vs. baselines on the same EgoClip data: MAE 59.6, VC-1 61.8, MPI 58.7,
-LIV 58.1, VideoMAE 52.6.
-
----
-
-## Layout
-
-```
-models_stp.py              model: shared encoder + dual decoders + forward_features
-main_pretrain_stp.py       pre-training entry point
-engine_pretrain_stp.py     training loop
-datasets_egoclip.py        EgoClip frame-pair dataset
-util/                      misc, lr_sched, pos_embed (STP's own implementations)
-tools/inference.py         run a checkpoint: features / predict / video
-tools/load_stp.py          load the checkpoint; run forward / extract features
-tools/verify_ckpt_params.py  verify the 434-tensor match (no torch needed)
-tools/export_encoder.py    strip the decoders, emit a plain ViT backbone
-tools/make_hf_release.py   training checkpoint -> slim inference files
-tools/upload_hf.py         publish the release folder to HuggingFace
-tools/prepare_ego4d_frames.py  mp4 -> PNG frame tree
-hf/                        model card and loader for the hub release
-docs/FORWARD_USAGE.md      detailed forward / loading walkthrough
-docs/PAPER_TO_CODE.md      which reported number comes from which artifact
-```
-
-**Scope.** This repository is the **pre-training** code and the released
-weights, and nothing else. Downstream policy training is not included, because
-the paper evaluated it with third-party harnesses rather than in-house code:
-the [VC-1 / CortexBench](https://github.com/facebookresearch/eai-vc/tree/main/cortexbench)
-setup for Meta-World, DMControl, Adroit and Trifinger, the
-[R3M](https://github.com/facebookresearch/r3m/tree/eval/evaluation) setup for
-Franka-Kitchen, the official LIBERO transformer policy,
-[RVT-2](https://github.com/NVlabs/RVT) for RLBench, and ACT for the real-world
-tasks. Reproducing a downstream number means dropping the frozen encoder into
-those harnesses. Also not included: the ViT-L encoder and the post-training /
-hybrid pre-training adaptation runs.
-
-## Notes on this release
-
-This is a cleaned-up version of the research codebase used for the paper.
-Things in the original experiment tree that were deliberately not carried over:
-
-- Dead branches and stale configs (a half-edited variant that crashes on
-  construct, hard-coded `/mnt/my_output/...` paths, an `except Exception` that
-  silently swallowed data errors) were removed rather than reproduced. The
-  sampler's unbounded recursion on a missing file became a bounded retry.
-
-Numerically, the model, the sampling rule, the augmentation, the masking ratios
-and the loss are unchanged.
 
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE).
-
-The `util/` helpers are STP's own implementations rather than copies of the MAE
-utilities, so the whole repository is covered by a single permissive licence.
-The sincos positional-embedding tables are verified bit-identical to the
-reference implementation, and the learning-rate schedule matches it pointwise,
-so this does not affect reproducibility.
