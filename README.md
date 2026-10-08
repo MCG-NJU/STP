@@ -14,6 +14,9 @@ current-frame feature used as a fixed key/value. Downstream, the encoder is
 frozen, both decoders are discarded, and the `[CLS]` token is the visual
 representation.
 
+This repository covers pre-training and the released weights. Downstream
+policy evaluation follows the third-party harnesses cited in the paper.
+
 ## Weights
 
 Hosted on HuggingFace: [yangjiange/STP](https://huggingface.co/yangjiange/STP)
@@ -71,15 +74,6 @@ torchrun --nproc_per_node=8 main_pretrain_stp.py \
 ```
 
 Effective batch size 4096, matching the paper.
-
-## Docs
-
-- [docs/FORWARD_USAGE.md](docs/FORWARD_USAGE.md) — loading, forward shapes, pitfalls
-- [docs/PAPER_TO_CODE.md](docs/PAPER_TO_CODE.md) — which reported number comes from which artifact
-
-This repository is the pre-training code only. Downstream policy evaluation
-uses third-party harnesses (CortexBench, R3M, LIBERO, RVT-2, ACT), as cited in
-the paper.
 
 ## Citation
 
