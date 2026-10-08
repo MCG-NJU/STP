@@ -15,7 +15,7 @@ tensorboard        # 只在训练时要
 decord             # 只在 video backend / 抽帧时要
 ```
 
-权重：`lang_0.95_aug0.8_no_lang.pth`，**torch 1.13+ 的 zip 格式**（不是裸 pickle），1.75 GB 里同时装着 `model` / `optimizer` / `epoch` / `scaler` / `args` 五个 key。只取 `model`。
+权重：`0.95_aug0.8.pth`，**torch 1.13+ 的 zip 格式**（不是裸 pickle），1.75 GB 里同时装着 `model` / `optimizer` / `epoch` / `scaler` / `args` 五个 key。只取 `model`。
 
 ---
 
@@ -24,7 +24,7 @@ decord             # 只在 video backend / 抽帧时要
 不装 torch 也能验（`tools/verify_ckpt_params.py` 自带 torch stub，直接读 zip 里的 pickle）：
 
 ```
-python tools/verify_ckpt_params.py lang_0.95_aug0.8_no_lang.pth
+python tools/verify_ckpt_params.py 0.95_aug0.8.pth
 ```
 
 预期输出：
@@ -40,7 +40,7 @@ RESULT: OK -- strict=True load will succeed
 装了 torch + timm 的话，用真实模型再验一次：
 
 ```
-python tools/load_stp.py --ckpt lang_0.95_aug0.8_no_lang.pth --check-only
+python tools/load_stp.py --ckpt 0.95_aug0.8.pth --check-only
 ```
 
 ---
@@ -57,7 +57,7 @@ model = models_stp.mae_vit_base_patch16(
     mask_ratio_future=0.95,
 )
 
-ckpt = torch.load('lang_0.95_aug0.8_no_lang.pth', map_location='cpu')
+ckpt = torch.load('0.95_aug0.8.pth', map_location='cpu')
 model.load_state_dict(ckpt['model'], strict=True)   # 434/434，可以 strict
 
 print(ckpt['epoch'])        # 49
@@ -75,8 +75,7 @@ model.eval()
 ```
 
 > 注意两点：
-> 1. `output_dir` 叫 `..._no_lang`，且 state_dict 里**没有任何语言参数**——这份权重是无语言版，文件名里的 `lang_` 是 argparse 默认值残留。
-> 2. `mask_ratio_future` 不在 `args` 里（它是模型里的硬编码常量），用 0.95。
+> 1. `mask_ratio_future` 不在 `args` 里（它是模型里的硬编码常量），用 0.95。
 
 ---
 
@@ -126,7 +125,7 @@ feat = model.forward_features(imgs)      # (N, 768)，已带 @torch.no_grad()
 命令行版：
 
 ```
-python tools/load_stp.py --ckpt lang_0.95_aug0.8_no_lang.pth \
+python tools/load_stp.py --ckpt 0.95_aug0.8.pth \
     --current samples/current_frame.png --features
 ```
 
@@ -135,7 +134,7 @@ python tools/load_stp.py --ckpt lang_0.95_aug0.8_no_lang.pth \
 不想每次都带上两个解码器的话：
 
 ```
-python tools/export_encoder.py --ckpt lang_0.95_aug0.8_no_lang.pth \
+python tools/export_encoder.py --ckpt 0.95_aug0.8.pth \
     --output stp_vitb_encoder.pth
 ```
 
@@ -146,7 +145,7 @@ python tools/export_encoder.py --ckpt lang_0.95_aug0.8_no_lang.pth \
 ## 5. 跑一次完整 forward（自检）
 
 ```
-python tools/load_stp.py --ckpt lang_0.95_aug0.8_no_lang.pth \
+python tools/load_stp.py --ckpt 0.95_aug0.8.pth \
     --current samples/current_frame.png \
     --future  samples/future_frame.png
 ```
@@ -157,7 +156,7 @@ python tools/load_stp.py --ckpt lang_0.95_aug0.8_no_lang.pth \
 
 ```
 [stp] model=mae_vit_base_patch16  params=146.34M  (encoder 85.65M, decoders 60.54M)
-[stp] loaded 434 tensors from lang_0.95_aug0.8_no_lang.pth
+[stp] loaded 434 tensors from 0.95_aug0.8.pth
 [stp] forward -> loss=<数值>
 [stp]   pred_spatial  (1, 196, 768)   masked patches 147/196
 [stp]   pred_temporal (1, 196, 768)

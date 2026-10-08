@@ -2,14 +2,14 @@
 STP checkpoint loader + forward-usage example.
 
     # 1) verify the encoder loads from the released checkpoint (needs timm)
-    python tools/load_stp.py --ckpt lang_0.95_aug0.8_no_lang.pth --check-only
+    python tools/load_stp.py --ckpt 0.95_aug0.8.pth --check-only
 
     # 2) run one pre-training forward on a real frame pair
-    python tools/load_stp.py --ckpt lang_0.95_aug0.8_no_lang.pth \
+    python tools/load_stp.py --ckpt 0.95_aug0.8.pth \
         --current samples/current_frame.png --future samples/future_frame.png
 
     # 3) extract frozen [CLS] features for a downstream policy
-    python tools/load_stp.py --ckpt lang_0.95_aug0.8_no_lang.pth \
+    python tools/load_stp.py --ckpt 0.95_aug0.8.pth \
         --current samples/current_frame.png --features
 
 The released checkpoint is a full pre-training state dict:
@@ -83,7 +83,7 @@ def preprocess(path, size=224):
 
 def main():
     p = argparse.ArgumentParser('STP checkpoint loader / forward usage')
-    p.add_argument('--ckpt', required=True, help='path to lang_0.95_aug0.8_no_lang.pth')
+    p.add_argument('--ckpt', required=True, help='path to 0.95_aug0.8.pth')
     p.add_argument('--model', default='mae_vit_base_patch16')
     p.add_argument('--current', default='samples/current_frame.png',
                    help='current frame I_c at time t')

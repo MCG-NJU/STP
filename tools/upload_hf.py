@@ -6,7 +6,7 @@ Upload the built release folder to HuggingFace.
     hf auth login
 
     # 2) build the slim files
-    python tools/make_hf_release.py --ckpt weights/lang_0.95_aug0.8_no_lang.pth
+    python tools/make_hf_release.py --ckpt weights/0.95_aug0.8.pth
 
     # 3) preview, then upload
     python tools/upload_hf.py --repo-id yangjiange/STP --dry-run

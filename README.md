@@ -31,11 +31,11 @@ cloning.
 
 ## Checkpoint
 
-`lang_0.95_aug0.8_no_lang.pth` — ViT-B/16 encoder + two 8-block decoders,
+`0.95_aug0.8.pth` — ViT-B/16 encoder + two 8-block decoders,
 146.34 M parameters (encoder 85.65 M + spatial decoder 26.01 M + temporal decoder 34.43 M + shared 0.10 M), trained 50 epochs on EgoClip.
 
 ```python
-ckpt = torch.load('lang_0.95_aug0.8_no_lang.pth', map_location='cpu')
+ckpt = torch.load('0.95_aug0.8.pth', map_location='cpu')
 ckpt.keys()      # dict_keys(['model', 'optimizer', 'epoch', 'scaler', 'args'])
 ckpt['epoch']    # 49 (0-indexed final epoch)
 ```
@@ -45,14 +45,10 @@ The file is a **torch >= 1.13 zip-format** checkpoint. `ckpt['model']` holds
 cleanly). Verify without even installing torch:
 
 ```
-python tools/verify_ckpt_params.py lang_0.95_aug0.8_no_lang.pth
+python tools/verify_ckpt_params.py 0.95_aug0.8.pth
 # RESULT: 434/434 tensors matched
 # RESULT: OK -- strict=True load will succeed
 ```
-
-Despite the `lang_` in its name, this checkpoint contains **no language
-parameters** — it is the single-modality variant, which is also what the
-ablation found best (adding language drops 63.7 -> 63.1).
 
 ---
 
@@ -75,7 +71,7 @@ import torch, models_stp
 
 model = models_stp.mae_vit_base_patch16(
     norm_pix_loss=True, mask_ratio_current=0.75, mask_ratio_future=0.95)
-model.load_state_dict(torch.load('lang_0.95_aug0.8_no_lang.pth')['model'], strict=True)
+model.load_state_dict(torch.load('0.95_aug0.8.pth')['model'], strict=True)
 model.eval()
 
 # I_c at time t, I_f at t+16; both (N, 3, 224, 224), ImageNet-normalised
@@ -98,13 +94,13 @@ policy (MLP / transformer / RVT-2 / ACT). Or export a decoder-free ViT that
 drops straight into existing `timm` backbone code:
 
 ```
-python tools/export_encoder.py --ckpt lang_0.95_aug0.8_no_lang.pth --output stp_vitb_encoder.pth
+python tools/export_encoder.py --ckpt 0.95_aug0.8.pth --output stp_vitb_encoder.pth
 ```
 
 ## End-to-end self-check
 
 ```
-python tools/load_stp.py --ckpt lang_0.95_aug0.8_no_lang.pth \
+python tools/load_stp.py --ckpt 0.95_aug0.8.pth \
     --current samples/current_frame.png --future samples/future_frame.png
 ```
 
@@ -125,19 +121,19 @@ downloads the file on demand.
 
 ```bash
 # image(s) -> (N, 768) [CLS] features -- what a policy consumes
-python tools/inference.py --ckpt lang_0.95_aug0.8_no_lang.pth \
+python tools/inference.py --ckpt 0.95_aug0.8.pth \
     --input samples/current_frame.png --mode features
 
 # a whole directory or glob, saved to disk
-python tools/inference.py --ckpt lang_0.95_aug0.8_no_lang.pth \
+python tools/inference.py --ckpt 0.95_aug0.8.pth \
     --input 'frames/*.png' --mode features --output feats.npy
 
 # every Nth frame of a video -> (T, 768)
-python tools/inference.py --ckpt lang_0.95_aug0.8_no_lang.pth \
+python tools/inference.py --ckpt 0.95_aug0.8.pth \
     --input clip.mp4 --mode video --stride 4 --output clip_feats.npy
 
 # a frame pair -> reconstructions, to sanity-check a checkpoint by eye
-python tools/inference.py --ckpt lang_0.95_aug0.8_no_lang.pth \
+python tools/inference.py --ckpt 0.95_aug0.8.pth \
     --input samples/current_frame.png --input-future samples/future_frame.png \
     --mode predict --output-dir out/
 
@@ -174,7 +170,7 @@ plus the AMP scaler. `tools/make_hf_release.py` splits it:
 
 ```bash
 # build the slim files from the training checkpoint
-python tools/make_hf_release.py --ckpt weights/lang_0.95_aug0.8_no_lang.pth
+python tools/make_hf_release.py --ckpt weights/0.95_aug0.8.pth
 
 # log in once, in your own terminal -- the token stays in ~/.cache/huggingface
 hf auth login
@@ -243,8 +239,6 @@ Selected ablations (weighted average over 5 single-task sim benchmarks):
 | joint-self (12 blocks, param-matched) | 59.1 |
 | no spatial prediction on current frame | 57.4 |
 | future frame not masked to 95% | — |
-| language only, no future frame | 55.4 |
-| language + 95% future frame | 63.1 |
 | frame interval 8 / 16 / 24 | 61.3 / **63.7** / 62.5 |
 
 vs. baselines on the same EgoClip data: MAE 59.6, VC-1 61.8, MPI 58.7,
@@ -281,16 +275,14 @@ setup for Meta-World, DMControl, Adroit and Trifinger, the
 Franka-Kitchen, the official LIBERO transformer policy,
 [RVT-2](https://github.com/NVlabs/RVT) for RLBench, and ACT for the real-world
 tasks. Reproducing a downstream number means dropping the frozen encoder into
-those harnesses. Also not included: the ViT-L encoder, the post-training /
-hybrid pre-training adaptation runs, and the language-fusion variants.
+those harnesses. Also not included: the ViT-L encoder and the post-training /
+hybrid pre-training adaptation runs.
 
 ## Notes on this release
 
-This is a cleaned-up version of the research codebase used for the paper. Two
-things in the original experiment tree were deliberately not carried over:
+This is a cleaned-up version of the research codebase used for the paper.
+Things in the original experiment tree that were deliberately not carried over:
 
-- The `models_mae_lang_future_*` family (8 language-fusion variants) is out of
-  scope — language hurt performance and is not in the released weights.
 - Dead branches and stale configs (a half-edited variant that crashes on
   construct, hard-coded `/mnt/my_output/...` paths, an `except Exception` that
   silently swallowed data errors) were removed rather than reproduced. The

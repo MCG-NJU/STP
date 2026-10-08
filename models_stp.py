@@ -6,7 +6,7 @@
 #
 # This file is a clean re-implementation of the pre-training model. It is
 # parameter-name compatible with the released checkpoint
-# `lang_0.95_aug0.8_no_lang.pth` (434 tensors, verified strict=True).
+# `0.95_aug0.8.pth` (434 tensors, verified strict=True).
 #
 # Reference implementations:
 #   MAE  : https://github.com/facebookresearch/mae

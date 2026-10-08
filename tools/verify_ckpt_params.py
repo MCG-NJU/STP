@@ -6,7 +6,7 @@ It parses the parameter names + shapes straight out of the torch-1.13 zip-format
 checkpoint via a torch stub, rebuilds the STP parameter shapes from first
 principles, and diffs the two sets.
 
-    python tools/verify_ckpt_params.py lang_0.95_aug0.8_no_lang.pth
+    python tools/verify_ckpt_params.py 0.95_aug0.8.pth
 
 Expected output: "434/434 tensors matched, 0 missing, 0 unexpected".
 """
@@ -159,7 +159,7 @@ def stp_param_shapes(embed_dim=768, depth=12, num_heads=12, patch=16, in_chans=3
 
 
 def main():
-    path = sys.argv[1] if len(sys.argv) > 1 else 'lang_0.95_aug0.8_no_lang.pth'
+    path = sys.argv[1] if len(sys.argv) > 1 else '0.95_aug0.8.pth'
     ckpt_shapes, ckpt = read_checkpoint_param_shapes(path)
     ours = stp_param_shapes()
 

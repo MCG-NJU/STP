@@ -70,15 +70,6 @@ model.eval()
 feats = model.forward_features(images)
 ```
 
-Or with the bundled wrapper:
-
-```python
-from loader import STPEncoder
-
-enc = STPEncoder.from_pretrained('yangjiange/STP')
-feats = enc.encode([pil_image_1, pil_image_2]) # (N, 768)
-```
-
 Concatenate multi-view and multi-frame features in the channel dimension
 together with the robot's proprioceptive state, then train the policy. STP does
 not constrain the policy architecture.
@@ -94,13 +85,6 @@ both branches with 1:1 weight.
 Pre-training costs about 1.77× standard image MAE (34.53 vs 19.56 GFLOPs for
 ViT-B/16 at 224²), owing to the shallow temporal decoder and the 95% future
 masking.
-
-## Note on language
-
-This checkpoint is the single-modality variant and contains no language
-parameters. Adding language narration as a temporal-prediction condition
-reduced performance in the paper's ablation, because of the modality gap
-between pre-training and single-modal downstream policies.
 
 ## Intended use
 

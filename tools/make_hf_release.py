@@ -1,13 +1,13 @@
 """
 Split a released STP pre-training checkpoint into inference-friendly files.
 
-`lang_0.95_aug0.8_no_lang.pth` is a *training* checkpoint: 1.75 GB, of which
+`0.95_aug0.8.pth` is a *training* checkpoint: 1.75 GB, of which
 only 558 MiB is the model. The rest is AdamW optimizer state (`exp_avg` and
 `exp_avg_sq` for 432 of the 434 tensors) plus the AMP scaler, which is dead
 weight for anyone who only wants to run the encoder.
 
     python tools/make_hf_release.py \
-        --ckpt weights/lang_0.95_aug0.8_no_lang.pth \
+        --ckpt weights/0.95_aug0.8.pth \
         --output-dir hf_release
 
 Writes:

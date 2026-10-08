@@ -296,7 +296,7 @@ def get_grad_norm_(parameters, norm_type: float = 2.0) -> torch.Tensor:
 def save_model(args, epoch, model, model_without_ddp, optimizer, loss_scaler):
     """Write `checkpoint-<epoch>.pth` holding {model, optimizer, epoch, scaler, args}.
 
-    Same layout as the released `lang_0.95_aug0.8_no_lang.pth`, so those weights
+    Same layout as the released `0.95_aug0.8.pth`, so those weights
     can be loaded with `load_model(--resume ...)` and training continued.
     """
     output_dir = Path(args.output_dir)

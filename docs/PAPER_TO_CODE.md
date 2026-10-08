@@ -11,7 +11,7 @@ Supplementary: CVPR 2025 submission #11223.
 
 ## The released checkpoint
 
-`lang_0.95_aug0.8_no_lang.pth` is the model behind the **`STP` rows** —
+`0.95_aug0.8.pth` is the model behind the **`STP` rows** —
 "STP / Ego" in Tab. 1, "STP" in Tab. 2, "STP" in Tab. 3, and the
 `STP (EgoClip)` row of the appendix comparison table.
 
@@ -31,11 +31,6 @@ and `ckpt['epoch'] == 49` (0-indexed final epoch).
 Note the augmentation: the checkpoint's directory name carries `aug0.8`, and
 the recipe correspondingly uses `RandomResizedCrop(0.8, 1.0)`. Both are
 reproduced here as `--aug_scale_min 0.8`.
-
-The directory name also carries `lang_`, but there are **no language
-parameters** in the state dict and `args` has no language switch — it is the
-single-modality variant. Tab. 4(b) is why: language + 95% mask scores 63.1
-against 63.7 for the 95% mask alone.
 
 ---
 

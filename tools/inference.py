@@ -12,19 +12,19 @@ Three things you can do with a pre-trained STP encoder:
 
 Examples:
     # one image -> a 768-d vector
-    python tools/inference.py --ckpt weights/lang_0.95_aug0.8_no_lang.pth \\
+    python tools/inference.py --ckpt weights/0.95_aug0.8.pth \\
         --input samples/current_frame.png --mode features
 
     # a directory of images -> (N, 768)
-    python tools/inference.py --ckpt weights/lang_0.95_aug0.8_no_lang.pth \\
+    python tools/inference.py --ckpt weights/0.95_aug0.8.pth \\
         --input 'frames/*.png' --mode features --output feats.npy
 
     # a video -> (T, 768) per-frame features at stride 4
-    python tools/inference.py --ckpt weights/lang_0.95_aug0.8_no_lang.pth \\
+    python tools/inference.py --ckpt weights/0.95_aug0.8.pth \\
         --input clip.mp4 --mode video --stride 4 --output clip_feats.npy
 
     # a frame pair -> reconstructions written to disk
-    python tools/inference.py --ckpt weights/lang_0.95_aug0.8_no_lang.pth \\
+    python tools/inference.py --ckpt weights/0.95_aug0.8.pth \\
         --input samples/current_frame.png --input-future samples/future_frame.png \\
         --mode predict --output-dir out/
 

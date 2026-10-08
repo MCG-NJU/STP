@@ -4,7 +4,7 @@ plain timm-style ViT, so downstream policy code can consume it without the
 dual decoders.
 
     python tools/export_encoder.py \
-        --ckpt lang_0.95_aug0.8_no_lang.pth \
+        --ckpt 0.95_aug0.8.pth \
         --output stp_vitb_encoder.pth
 
 The exported file contains:
