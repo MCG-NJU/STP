@@ -208,4 +208,10 @@ and the loss are unchanged.
 
 ## License
 
-CC-BY-NC 4.0, inherited from the MAE codebase. See [LICENSE](LICENSE).
+Apache-2.0. See [LICENSE](LICENSE).
+
+The `util/` helpers are STP's own implementations rather than copies of the MAE
+utilities, so the whole repository is covered by a single permissive licence.
+The sincos positional-embedding tables are verified bit-identical to the
+reference implementation, and the learning-rate schedule matches it pointwise,
+so this does not affect reproducibility.
