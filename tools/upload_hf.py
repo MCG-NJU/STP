@@ -9,8 +9,8 @@ Upload the built release folder to HuggingFace.
     python tools/make_hf_release.py --ckpt weights/lang_0.95_aug0.8_no_lang.pth
 
     # 3) preview, then upload
-    python tools/upload_hf.py --repo-id MCG-NJU/STP --dry-run
-    python tools/upload_hf.py --repo-id MCG-NJU/STP
+    python tools/upload_hf.py --repo-id yangjiange/STP --dry-run
+    python tools/upload_hf.py --repo-id yangjiange/STP
 
 This script reads the token from the standard HuggingFace cache via
 `huggingface_hub`, so no credential is ever passed on the command line or
@@ -43,7 +43,7 @@ def check_credentials():
 
 def main():
     p = argparse.ArgumentParser('upload the STP release to HuggingFace')
-    p.add_argument('--repo-id', required=True, help='e.g. MCG-NJU/STP')
+    p.add_argument('--repo-id', required=True, help='e.g. yangjiange/STP')
     p.add_argument('--folder', default='hf_release')
     p.add_argument('--private', action='store_true')
     p.add_argument('--dry-run', action='store_true',

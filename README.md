@@ -141,7 +141,7 @@ python tools/inference.py --ckpt lang_0.95_aug0.8_no_lang.pth \
     --mode predict --output-dir out/
 
 # straight from the hub
-python tools/inference.py --ckpt MCG-NJU/STP --input photo.jpg --mode features
+python tools/inference.py --ckpt yangjiange/STP --input photo.jpg --mode features
 ```
 
 Importable version (works offline once the file is cached):
@@ -149,7 +149,7 @@ Importable version (works offline once the file is cached):
 ```python
 from hf.loader import STPEncoder
 
-enc = STPEncoder.from_pretrained('MCG-NJU/STP')     # or a local .pth path
+enc = STPEncoder.from_pretrained('yangjiange/STP')     # or a local .pth path
 feats = enc.encode([pil_img_1, pil_img_2])          # (N, 768)
 ```
 
@@ -179,8 +179,8 @@ python tools/make_hf_release.py --ckpt weights/lang_0.95_aug0.8_no_lang.pth
 hf auth login
 
 # preview, then upload
-python tools/upload_hf.py --repo-id MCG-NJU/STP --dry-run
-python tools/upload_hf.py --repo-id MCG-NJU/STP
+python tools/upload_hf.py --repo-id yangjiange/STP --dry-run
+python tools/upload_hf.py --repo-id yangjiange/STP
 ```
 
 `tools/upload_hf.py` reads the token through `huggingface_hub`, so no credential

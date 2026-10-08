@@ -65,7 +65,7 @@ import torch
 from models_stp import mae_vit_base_patch16
 from huggingface_hub import hf_hub_download
 
-path = hf_hub_download('MCG-NJU/STP', 'stp_vitb.pth')
+path = hf_hub_download('yangjiange/STP', 'stp_vitb.pth')
 model = mae_vit_base_patch16()
 model.load_state_dict(torch.load(path, map_location='cpu')['model'], strict=True)
 model.eval()
@@ -79,7 +79,7 @@ Or with the bundled wrapper:
 ```python
 from loader import STPEncoder
 
-enc = STPEncoder.from_pretrained('MCG-NJU/STP')
+enc = STPEncoder.from_pretrained('yangjiange/STP')
 feats = enc.encode([pil_image_1, pil_image_2])   # (N, 768)
 ```
 
@@ -142,6 +142,29 @@ alternative that performs better than end-to-end fine-tuning.
 
 Not intended for general-purpose vision tasks; it is an image-level
 representation optimised for manipulation.
+
+## Verification
+
+Checked on `torch 2.14.1+cpu` with `timm 0.3.2`:
+
+- `load_state_dict(..., strict=True)` succeeds: 434/434 tensors, no missing and
+  no unexpected keys.
+- A pre-training forward on a real frame pair gives a finite loss, with masks of
+  exactly 147/196 (75%) and ~186/196 (95%).
+- `stp_vitb.pth` is bit-identical to the original training checkpoint in model
+  weights; only the optimizer state and AMP scaler were removed.
+- `stp_vitb_encoder.pth` loads into a plain `timm` `VisionTransformer`
+  (`patch_size=16, embed_dim=768, depth=12, num_heads=12, qkv_bias=True`),
+  with only the classification head unmatched, as expected for a frozen encoder.
+
+Two version notes if you load these yourself:
+
+- On PyTorch >= 2.6, `torch.load` defaults to `weights_only=True`, and the
+  checkpoint's `args` field is an `argparse.Namespace`, which is not on the
+  allowlist. Allowlist it, or use the bundled `util/ckpt_io.py`.
+- `timm==0.3.2` imports `container_abcs` from `torch._six`, removed in PyTorch
+  2.0. `util/torch_six_compat.py` restores that one attribute; import it before
+  `timm`.
 
 ## Citation
 

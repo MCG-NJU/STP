@@ -4,7 +4,7 @@ Minimal loader for the STP release on HuggingFace.
     import torch
     from loader import STPEncoder
 
-    enc = STPEncoder.from_pretrained('MCG-NJU/STP')
+    enc = STPEncoder.from_pretrained('yangjiange/STP')
     feats = enc.encode(images)      # (N, 3, 224, 224) -> (N, 768)
 
 Or straight from the hub without this file:
@@ -12,7 +12,7 @@ Or straight from the hub without this file:
     import torch, models_stp
     from huggingface_hub import hf_hub_download
 
-    path = hf_hub_download('MCG-NJU/STP', 'stp_vitb.pth')
+    path = hf_hub_download('yangjiange/STP', 'stp_vitb.pth')
     model = models_stp.mae_vit_base_patch16()
     from util.ckpt_io import load_model_state
     state, _ = load_model_state(path)
@@ -43,7 +43,7 @@ class STPEncoder:
 
     # ------------------------------------------------------------------
     @classmethod
-    def from_pretrained(cls, repo_id_or_path='MCG-NJU/STP', filename='stp_vitb.pth',
+    def from_pretrained(cls, repo_id_or_path='yangjiange/STP', filename='stp_vitb.pth',
                         device=None, repo_root=None):
         import models_stp
 

@@ -29,7 +29,7 @@ Examples:
         --mode predict --output-dir out/
 
 The checkpoint may be a local .pth/.pt, or a HuggingFace repo id such as
-`MCG-NJU/STP` -- in which case the file is downloaded and cached via
+`yangjiange/STP` -- in which case the file is downloaded and cached via
 `huggingface_hub`. Requires `pip install huggingface_hub` only for that path.
 """
 import argparse
@@ -50,7 +50,8 @@ IMAGENET_MEAN = (0.485, 0.456, 0.406)
 IMAGENET_STD = (0.229, 0.224, 0.225)
 IMAGE_EXTS = ('.png', '.jpg', '.jpeg', '.bmp', '.webp', '.tif', '.tiff')
 VIDEO_EXTS = ('.mp4', '.avi', '.mov', '.mkv', '.webm')
-DEFAULT_HF_FILENAME = 'lang_0.95_aug0.8_no_lang.pth'
+DEFAULT_HF_REPO = 'yangjiange/STP'
+DEFAULT_HF_FILENAME = 'stp_vitb.pth'
 
 
 # ---------------------------------------------------------------------------
@@ -201,7 +202,7 @@ def main():
                                 formatter_class=argparse.RawDescriptionHelpFormatter,
                                 description=__doc__)
     p.add_argument('--ckpt', required=True,
-                   help='local .pth/.pt, or a HF repo id such as MCG-NJU/STP')
+                   help='local .pth/.pt, or a HF repo id such as yangjiange/STP')
     p.add_argument('--input', required=True,
                    help='image, glob, directory, or video')
     p.add_argument('--input-future', default=None,
